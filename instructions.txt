@@ -1,0 +1,215 @@
+comme tu peux le voir j ai installé une application de base nextjs ### Amélioration du Cahier des Charges pour l'Application de Pointage de Présence
+
+Voici une version améliorée du cahier des charges initial, en intégrant des bonnes pratiques pour la rédaction et la structuration des documents techniques.
+
+---
+
+## 1. Objectifs du Projet
+
+**Problématique** :  
+Remplacer les systèmes de pointage manuels par une solution digitale sécurisée, accessible sur mobile et desktop, garantissant une traçabilité légale des présences.
+
+**Fonctionnalités Prioritaires (MoSCoW)** :  
+- **Must-have** :  
+  - Pointage géolocalisé avec photo optionnelle.  
+  - Interface administrateur pour validation/correction des pointages.  
+  - Exportation des données au format Excel/PDF.  
+  - Notifications (rappels de pointage, validations par le manager).  
+- **Should-have** :  
+  - Gestion des plannings et congés.  
+  - Tableau de bord RH avec indicateurs clés.  
+- **Could-have** :  
+  - Intégration d'une API de paie (ex : Sage).  
+  - Reconnaissance faciale via WebAssembly.
+
+---
+
+## 2. Stack Technique
+
+| **Composant**       | **Technologie**                          |  
+|----------------------|------------------------------------------|  
+| Frontend            | Next.js 14 (App Router), TypeScript      |  
+| UI/UX               | Shadcn/UI + Tailwind CSS                 |  
+| Authentification    | Clerk (avec 2FA et gestion des rôles)    |  
+| Base de Données     | Supabase PostgreSQL                      |  
+| ORM                 | Prisma                                   |  
+| Realtime            | Supabase Realtime                        |  
+| Stockage            | Supabase Storage (pour photos et exports)|  
+| Déploiement         | Vercel (Frontend) + Supabase (Backend)   |
+
+---
+
+## 3. Étapes de Développement
+
+### Étape 1 : Configuration Initiale (1 semaine)
+- Initialisation du projet Next.js avec TypeScript.
+- Configuration de Clerk :
+  ```bash
+  npm install @clerk/nextjs
+  ```
+  ```typescript
+  // middleware.ts
+  import { authMiddleware } from "@clerk/nextjs";
+  export default authMiddleware();
+  ```
+- Connexion de Prisma à Supabase :
+  ```prisma
+  datasource db {
+    provider = "postgresql"
+    url      = env("SUPABASE_DB_URL")
+  }
+  ```
+- Déploiement de l'environnement de staging sur Vercel/Supabase.
+
+### Étape 2 : Modèles de Données (2 jours)
+**Schéma Prisma** :
+```prisma
+model User {
+  id              String    @id @default(uuid())
+  clerkUserId     String    @unique
+  role            Role      @default(EMPLOYE)
+  presences       Presence[]
+}
+
+model Presence {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  checkIn     DateTime
+  checkOut    DateTime?
+  location    Json? // { lat: number, lng: number }
+  photoUrl    String?
+  status      PresenceStatus @default(EN_ATTENTE)
+}
+
+enum Role { EMPLOYE MANAGER RH ADMIN }
+enum PresenceStatus { EN_ATTENTE VALIDE REJETE }
+```
+
+### Étape 3 : Authentification & Rôles (3 jours)
+- Intégration de Clerk avec gestion des rôles :
+```typescript
+// app/dashboard/page.tsx
+import { auth } from "@clerk/nextjs";
+
+export default function Dashboard() {
+    const { userId, sessionClaims } = auth();
+    const role = sessionClaims?.metadata.role; // Géré via Clerk Dashboard
+}
+```
+- Création de pages protégées par rôle :
+   - `/employe` : Interface de pointage.
+   - `/manager` : Validation des présences.
+
+### Étape 4 : Interface Mobile (1 semaine)
+**Composants Clés** :
+- `<GeolocationButton>` :
+   - Utilise `navigator.geolocation.getCurrentPosition()`.
+   - Intègre MapLibre GL JS pour la visualisation cartographique.
+   - Stocke la photo via `Supabase Storage`.
+
+**Workflow Mobile** :
+1. L'employé ouvre l'application PWA et se connecte via Clerk.
+2. Le bouton "Pointer" vérifie la géolocalisation.
+3. Capture photo via `<input type="file" accept="image/*">`.
+4. Envoi des données à l'API Next.js :
+```typescript
+// app/api/presence/route.ts
+export async function POST(req: Request) {
+    const { userId, lat, lng, photo } = await req.json();
+    // Upload photo vers Supabase Storage
+    const { data } = await supabase.storage.from('presences').upload(`${userId}/${Date.now()}.jpg`, photo);
+    // Création de la présence avec Prisma
+    await prisma.presence.create({ data: { userId, checkIn: new Date(), location: { lat, lng }, photoUrl: data?.path }});
+}
+```
+
+### Étape 5 : Interface Desktop Admin (4 jours)
+**Fonctionnalités** :
+- Tableau filtré des présences (React Table).
+- Calendrier interactif (react-big-calendar).
+- Graphiques de synthèse (Chart.js).
+- Export CSV/PDF avec `@react-pdf/renderer`.
+
+### Étape 6 : Sécurité & Conformité (2 jours)
+- Activation du Row Level Security sur Supabase.
+- Chiffrement des données sensibles avec `pgcrypto`.
+- Implémentation d'un audit trail :
+```prisma
+model AuditLog {
+    id        String   @id @default(uuid())
+    action    String   // "CREATE_PRESENCE", "UPDATE_STATUS"
+    userId    String
+    oldData   Json?
+    newData   Json?
+    timestamp DateTime @default(now())
+}
+```
+- Respect RGPD : Consentement explicite pour la géolocalisation.
+
+---
+
+## 4. Déploiement & Monitoring
+
+**Workflow CI/CD** :
+1. Déploiement automatique sur Vercel à chaque push sur `main`.
+2. Migrations de base de données via `prisma migrate deploy`.
+3. Tests E2E avec Cypress sur Vercel Preview.
+
+**Monitoring** :
+- Erreurs : Sentry.io.
+- Performance : Vercel Analytics.
+- Logs : Supabase Logs Explorer.
+
+---
+
+## 5. Livrables
+
+| **Document**                | **Contenu**                                  |  
+|-----------------------------|---------------------------------------------|  
+| Code Source                 | Repository Git avec documentation technique |  
+| APK Mobile                  | PWA installable via QR code                 |  
+| Manuel Utilisateur          | PDF interactif avec GIFs explicatifs        |  
+| Rapport de Conformité RGPD  | Audit par cabinet externe                   |
+
+---
+
+## 6. Budget & Planning
+
+**Coûts** :
+- Développement : entre **35k€ et 60k€**.
+- Hébergement : **400€/mois** (Vercel Pro + Supabase Pro).
+- Maintenance : **20% du coût initial annuel**.
+
+**Timeline** :
+- J0–J7 : Spécifications techniques.
+- J8–J35 : Développement MVP.
+- J36–J45 : Tests utilisateurs.
+- J46 : Déploiement production.
+
+---
+
+## Exemple de Sécurité avec Clerk
+
+```typescript
+// app/api/admin/route.ts
+import { auth } from "@clerk/nextjs";
+
+export async function GET() {
+    const { userId, sessionClaims } = auth();
+    if (sessionClaims?.metadata.role !== "ADMIN") {
+        return new Response("Accès refusé", { status: 403 });
+    }
+    // Logique admin
+}
+```
+
+---
+
+## Risques & Solutions
+
+| **Risque**                  | **Solution**                              |  
+|-----------------------------|-------------------------------------------|  
+| Fake GPS                    | Détection via adresse IP + historique     |  
+| Données hors ligne          | Synchronisation PWA avec Service Workers |  
+| Conflits de pointage        | Verrouillage optimiste via Prisma         |
