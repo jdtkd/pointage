@@ -11,6 +11,8 @@
   "dependencies": {
     "@clerk/localizations": "^3.10.4",
     "@clerk/nextjs": "^6.11.1",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.48.1",
     "@types/maplibre-gl": "^1.13.2",
     "leaflet": "^1.9.4",
     "maplibre-gl": "^5.1.0",

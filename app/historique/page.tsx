@@ -1,11 +1,29 @@
 "use client";
 import { useState } from 'react';
 import { usePointageStore, Pointage } from '../stores/pointageStore';
+import dynamic from 'next/dynamic';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface PointageJournee {
   date: string;
   arrivee?: Pointage;
   depart?: Pointage;
+}
+
+// Modifiez l'import dynamique pour utiliser le chemin correct
+const MapWithNoSSR = dynamic(
+  () => import('@/components/Map'),
+  { 
+    ssr: false,
+    loading: () => <p>Chargement de la carte...</p>
+  }
+);
+
+// Définition du type pour les coordonnées
+interface Location {
+  lat: number;
+  lng: number;
 }
 
 export default function HistoriquePage() {
@@ -49,6 +67,21 @@ export default function HistoriquePage() {
 
   const pointagesJournaliers = regrouperPointagesParJour(pointagesFiltres);
 
+  // Fonction pour vérifier si une journée est complète
+  const isJourneeComplete = (journee: PointageJournee) => {
+    return journee.arrivee && journee.depart;
+  };
+
+  // Fonction pour calculer la durée de présence
+  const calculerDureePresence = (journee: PointageJournee) => {
+    if (!isJourneeComplete(journee)) return '--:--';
+    
+    const debut = new Date(journee.arrivee!.timestamp);
+    const fin = new Date(journee.depart!.timestamp);
+    const diffHeures = (fin.getTime() - debut.getTime()) / (1000 * 60 * 60);
+    return `${Math.floor(diffHeures)}h${Math.round((diffHeures % 1) * 60)}`;
+  };
+
   // Fonction pour formater l'heure
   const formatHeure = (timestamp?: string) => {
     if (!timestamp) return '--:--';
@@ -59,7 +92,7 @@ export default function HistoriquePage() {
   };
 
   // Fonction pour formater les coordonnées
-  const formatCoordonnees = (location?: { lat: number; lng: number }) => {
+  const formatCoordonnees = (location?: Location) => {
     if (!location) return 'Non disponible';
     return `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
   };
@@ -125,6 +158,7 @@ export default function HistoriquePage() {
                   <th>Coordonnées Arrivée</th>
                   <th>Départ</th>
                   <th>Coordonnées Départ</th>
+                  <th>Durée de présence</th>
                   <th>Statut</th>
                   <th>Actions</th>
                 </tr>
@@ -136,32 +170,37 @@ export default function HistoriquePage() {
                     <td>{formatHeure(journee.arrivee?.timestamp)}</td>
                     <td>
                       {journee.arrivee?.location && (
-                        <button 
-                          className="btn btn-xs btn-ghost tooltip" 
-                          data-tip={formatCoordonnees(journee.arrivee.location)}
-                        >
-                          📍 Voir position
-                        </button>
+                        <div className="relative">
+                          <button 
+                            className="btn btn-xs btn-ghost"
+                            onClick={() => {/* logique pour afficher la carte */}}
+                          >
+                            📍 Voir position
+                          </button>
+                          {/* Vous pouvez ajouter un modal ou un popover pour afficher la carte */}
+                        </div>
                       )}
                     </td>
                     <td>{formatHeure(journee.depart?.timestamp)}</td>
                     <td>
                       {journee.depart?.location && (
-                        <button 
-                          className="btn btn-xs btn-ghost tooltip" 
-                          data-tip={formatCoordonnees(journee.depart.location)}
-                        >
-                          📍 Voir position
-                        </button>
+                        <div className="relative">
+                          <button 
+                            className="btn btn-xs btn-ghost"
+                            onClick={() => {/* logique pour afficher la carte */}}
+                          >
+                            📍 Voir position
+                          </button>
+                          {/* Vous pouvez ajouter un modal ou un popover pour afficher la carte */}
+                        </div>
                       )}
                     </td>
+                    <td>{calculerDureePresence(journee)}</td>
                     <td>
                       <span className={`badge badge-${
-                        (journee.arrivee?.status === 'VALIDE' && journee.depart?.status === 'VALIDE') ? 'success' :
-                        (journee.arrivee?.status === 'REJETE' || journee.depart?.status === 'REJETE') ? 'error' : 'warning'
+                        isJourneeComplete(journee) ? 'success' : 'warning'
                       }`}>
-                        {(journee.arrivee?.status === 'VALIDE' && journee.depart?.status === 'VALIDE') ? 'Validé' :
-                         (journee.arrivee?.status === 'REJETE' || journee.depart?.status === 'REJETE') ? 'Rejeté' : 'En attente'}
+                        {isJourneeComplete(journee) ? 'Complet' : 'Incomplet'}
                       </span>
                     </td>
                     <td>

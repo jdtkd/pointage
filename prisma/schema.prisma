@@ -1,0 +1,96 @@
+// This is your Prisma schema file
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Modèle utilisateur lié à Clerk
+model User {
+  id            String     @id @default(cuid())
+  clerkId       String     @unique // ID externe de Clerk
+  email         String     @unique
+  firstName     String?
+  lastName      String?
+  role          Role       @default(EMPLOYE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  pointages     Pointage[]
+  departement   Departement? @relation(fields: [departementId], references: [id])
+  departementId String?
+}
+
+// Modèle pour les pointages
+model Pointage {
+  id          String         @id @default(cuid())
+  type        PointageType
+  timestamp   DateTime       @default(now())
+  location    Json?         // { lat: number, lng: number }
+  commentaire String?
+  status      PointageStatus @default(EN_ATTENTE)
+  photo       String?        // URL de la photo stockée
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  validePar   String?       // clerkId du manager qui a validé
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId, timestamp]) // Index pour optimiser les recherches
+  @@index([timestamp]) // Index pour les requêtes par date
+}
+
+// Modèle pour les départements
+model Departement {
+  id        String   @id @default(cuid())
+  nom       String   @unique
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Modèle pour les horaires de travail
+model HoraireTravail {
+  id          String   @id @default(cuid())
+  jourSemaine Int      // 0-6 (Dimanche-Samedi)
+  heureDebut  Int      // 8 pour 8h00
+  heureFin    Int      // 20 pour 20h00
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([jourSemaine]) // Un seul horaire par jour
+}
+
+// Modèle pour l'historique des modifications
+model AuditLog {
+  id        String    @id @default(cuid())
+  action    String    // CREATE, UPDATE, DELETE
+  model     String    // Nom du modèle affecté
+  recordId  String    // ID de l'enregistrement affecté
+  userId    String    // clerkId de l'utilisateur qui a fait l'action
+  changes   Json      // { before: {}, after: {} }
+  timestamp DateTime  @default(now())
+
+  @@index([model, recordId])
+  @@index([userId])
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  RH
+  EMPLOYE
+}
+
+enum PointageType {
+  ARRIVEE
+  DEPART
+}
+
+enum PointageStatus {
+  EN_ATTENTE
+  VALIDE
+  REJETE
+} 
