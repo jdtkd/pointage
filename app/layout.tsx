@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
@@ -25,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="fr" data-theme="emerald">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-base-200`}
+        className={`${inter.variable} font-sans antialiased min-h-screen bg-base-200`}
       >
         <div className="drawer lg:drawer-open">
           <input id="main-drawer" type="checkbox" className="drawer-toggle" />
@@ -42,7 +38,7 @@ export default function RootLayout({
                 </label>
               </div>
               <div className="flex-1">
-                <a className="btn btn-ghost text-xl">Pointage App</a>
+                <a className="text-xl font-bold">Pointage App</a>
               </div>
             </div>
             
@@ -58,7 +54,7 @@ export default function RootLayout({
             <aside className="w-80 min-h-screen bg-base-100">
               <div className="p-4">
                 <h2 className="text-2xl font-bold text-center mb-6">Pointage App</h2>
-                <ul className="menu menu-vertical gap-2">
+                <ul className="menu menu-vertical gap-2 text-base font-medium">
                   <li><a href="/" className="text-base">🏠 Accueil</a></li>
                   <li><a href="/pointer" className="text-base">⏰ Pointer</a></li>
                   <li><a href="/historique" className="text-base">📊 Historique</a></li>

@@ -1,6 +1,29 @@
 import Image from "next/image";
 
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  description?: string;
+}
+
+function StatCard({ title, value, description }: StatCardProps) {
+  return (
+    <div className="stats shadow">
+      <div className="stat">
+        <div className="stat-title">{title}</div>
+        <div className="stat-value">{value}</div>
+        {description && <div className="stat-desc">{description}</div>}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
+  const handleButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // Gérer le clic sur le bouton
+    console.log('Button clicked', event);
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
@@ -8,7 +31,7 @@ export default function Home() {
         <div className="hero-content text-center">
           <div>
             <h1 className="text-4xl font-bold">Bienvenue sur l'App de Pointage</h1>
-            <p className="py-6">Gérez facilement vos présences et votre temps de travail.</p>
+            <p className="py-6">Gérez facilement vos présences avec la géolocalisation.</p>
             <button className="btn btn-primary">Pointer maintenant</button>
           </div>
         </div>
@@ -16,29 +39,21 @@ export default function Home() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        <div className="stats shadow">
-          <div className="stat">
-            <div className="stat-title">Pointages du jour</div>
-            <div className="stat-value">31</div>
-            <div className="stat-desc">↗︎ +5% par rapport à hier</div>
-          </div>
-        </div>
-
-        <div className="stats shadow">
-          <div className="stat">
-            <div className="stat-title">Temps de travail</div>
-            <div className="stat-value">7h30</div>
-            <div className="stat-desc">Aujourd'hui</div>
-          </div>
-        </div>
-
-        <div className="stats shadow">
-          <div className="stat">
-            <div className="stat-title">Statut</div>
-            <div className="stat-value text-success">Présent</div>
-            <div className="stat-desc">Depuis 8h30</div>
-          </div>
-        </div>
+        <StatCard 
+          title="Pointages du jour" 
+          value="31" 
+          description="↗︎ +5% par rapport à hier" 
+        />
+        <StatCard 
+          title="Temps de travail" 
+          value="7h30" 
+          description="Aujourd'hui" 
+        />
+        <StatCard 
+          title="Statut" 
+          value="Présent" 
+          description="Depuis 8h30" 
+        />
       </div>
 
       {/* Quick Actions */}
@@ -47,7 +62,7 @@ export default function Home() {
           <div className="card-body">
             <h2 className="card-title">Actions rapides</h2>
             <div className="flex flex-col gap-2">
-              <button className="btn btn-primary">📍 Pointer l'arrivée</button>
+              <button className="btn btn-primary">📍 Pointer avec géolocalisation</button>
               <button className="btn btn-secondary">🏃 Pointer le départ</button>
               <button className="btn btn-accent">📝 Déclarer une absence</button>
             </div>

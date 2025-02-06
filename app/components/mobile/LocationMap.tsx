@@ -1,11 +1,28 @@
 "use client";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import type { MapContainer as MapContainerType, Marker as MarkerType } from 'react-leaflet';
 
-// Chargement dynamique de maplibre-gl pour éviter les problèmes de SSR
-const MapLibre = dynamic(() => import('maplibre-gl'), {
-  ssr: false, // Désactive le rendu côté serveur pour ce composant
-});
+// Chargement dynamique de react-leaflet pour éviter les problèmes de SSR
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+) as typeof MapContainerType;
+
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+) as typeof MarkerType;
+
+const Popup = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+);
 
 interface LocationMapProps {
   latitude: number;
@@ -13,75 +30,33 @@ interface LocationMapProps {
 }
 
 export default function LocationMap({ latitude, longitude }: LocationMapProps) {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<any>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const mapRef = useRef<MapContainerType | null>(null);
 
   useEffect(() => {
-    if (!mapContainer.current || !MapLibre || mapLoaded) return;
+    // Importer les styles CSS de Leaflet
+    void import('leaflet/dist/leaflet.css');
+  }, []);
 
-    const initializeMap = async () => {
-      // Importer les styles CSS de manière dynamique
-      await import('maplibre-gl/dist/maplibre-gl.css');
-
-      const mapInstance = new MapLibre.Map({
-        container: mapContainer.current!,
-        style: {
-          version: 8,
-          sources: {
-            'osm': {
-              type: 'raster',
-              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-              tileSize: 256,
-              attribution: '&copy; OpenStreetMap Contributors',
-            },
-          },
-          layers: [
-            {
-              id: 'osm',
-              type: 'raster',
-              source: 'osm',
-              minzoom: 0,
-              maxzoom: 19,
-            },
-          ],
-        },
-        center: [longitude, latitude],
-        zoom: 15
-      });
-
-      mapInstance.on('load', () => {
-        // Ajouter un marqueur
-        new MapLibre.Marker()
-          .setLngLat([longitude, latitude])
-          .addTo(mapInstance);
-        
-        setMapLoaded(true);
-      });
-
-      map.current = mapInstance;
-    };
-
-    initializeMap();
-
-    return () => {
-      if (map.current) {
-        map.current.remove();
-      }
-    };
-  }, [latitude, longitude, MapLibre, mapLoaded]);
+  if (typeof window === "undefined") return null;
 
   return (
-    <div className="relative">
-      <div 
-        ref={mapContainer} 
-        className="w-full h-[200px] rounded-lg overflow-hidden"
-      />
-      {!mapLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-base-200">
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
-      )}
+    <div className="relative h-[300px] w-full rounded-lg overflow-hidden">
+      <MapContainer
+        center={[latitude, longitude]}
+        zoom={15}
+        style={{ height: "100%", width: "100%" }}
+        ref={mapRef}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <Marker position={[latitude, longitude]}>
+          <Popup>
+            Votre position actuelle
+          </Popup>
+        </Marker>
+      </MapContainer>
     </div>
   );
 } 
