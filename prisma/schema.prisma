@@ -1,26 +1,39 @@
-// This is your Prisma schema file
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 // Modèle utilisateur lié à Clerk
 model User {
-  id            String     @id @default(cuid())
-  clerkId       String     @unique // ID externe de Clerk
-  email         String     @unique
+  id            String         @id @default(cuid())
+  clerkId       String         @unique
+  email         String         @unique
   firstName     String?
   lastName      String?
-  role          Role       @default(EMPLOYE)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  role          Role          @default(EMPLOYE)
+  isActive      Boolean       @default(true)
+  departement   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lastLoginAt   DateTime?
+
+  // Relations
   pointages     Pointage[]
-  departement   Departement? @relation(fields: [departementId], references: [id])
-  departementId String?
+  validations   ValidePar[]   @relation("Valideur")
+  preferences   Preferences?
+  auditLogs     AuditLog[]
+  stats         PointageStats[]
+
+  // Indexes
+  @@index([email])
+  @@index([clerkId])
 }
 
 // Modèle pour les pointages
@@ -31,50 +44,128 @@ model Pointage {
   location    Json?         // { lat: number, lng: number }
   commentaire String?
   status      PointageStatus @default(EN_ATTENTE)
-  photo       String?        // URL de la photo stockée
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
-  validePar   String?       // clerkId du manager qui a validé
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  @@index([userId, timestamp]) // Index pour optimiser les recherches
-  @@index([timestamp]) // Index pour les requêtes par date
+  // Relations
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  validation  ValidePar?
+
+  // Indexes pour améliorer les performances des requêtes fréquentes
+  @@index([userId, timestamp, type])
+  @@index([timestamp])
+  @@index([status])
+  @@index([type])
 }
 
-// Modèle pour les départements
-model Departement {
-  id        String   @id @default(cuid())
-  nom       String   @unique
-  users     User[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Modèle pour la validation des pointages
+model ValidePar {
+  id          String    @id @default(cuid())
+  pointageId  String    @unique
+  valideurId  String
+  timestamp   DateTime  @default(now())
+  commentaire String?
+  status      PointageStatus
+
+  // Relations
+  pointage    Pointage  @relation(fields: [pointageId], references: [id], onDelete: Cascade)
+  valideur    User      @relation("Valideur", fields: [valideurId], references: [id])
+
+  // Indexes
+  @@index([valideurId])
+  @@index([timestamp])
 }
 
-// Modèle pour les horaires de travail
-model HoraireTravail {
-  id          String   @id @default(cuid())
-  jourSemaine Int      // 0-6 (Dimanche-Samedi)
-  heureDebut  Int      // 8 pour 8h00
-  heureFin    Int      // 20 pour 20h00
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// Modèle pour les préférences utilisateur
+model Preferences {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  notifPointage   Boolean   @default(true)
+  notifEmail      Boolean   @default(true)
+  notifPush       Boolean   @default(true)
+  geolocAuto      Boolean   @default(true)
+  rayonTolerance  Int       @default(100)  // en mètres
+  fuseauHoraire   String    @default("Europe/Paris")
+  themePreference String    @default("system")
+  languePreference String   @default("fr")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  @@unique([jourSemaine]) // Un seul horaire par jour
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([userId])
 }
 
 // Modèle pour l'historique des modifications
 model AuditLog {
-  id        String    @id @default(cuid())
-  action    String    // CREATE, UPDATE, DELETE
-  model     String    // Nom du modèle affecté
-  recordId  String    // ID de l'enregistrement affecté
-  userId    String    // clerkId de l'utilisateur qui a fait l'action
-  changes   Json      // { before: {}, after: {} }
-  timestamp DateTime  @default(now())
+  id          String    @id @default(cuid())
+  action      String    // CREATE, UPDATE, DELETE
+  model       String    // nom du modèle affecté
+  recordId    String    // ID de l'enregistrement affecté
+  userId      String
+  changes     Json      // { before: {}, after: {} }
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime  @default(now())
 
+  // Relations
+  user        User      @relation(fields: [userId], references: [id])
+
+  // Indexes
   @@index([model, recordId])
   @@index([userId])
+  @@index([timestamp])
+}
+
+// Statistiques de pointage agrégées
+model PointageStats {
+  id          String    @id @default(cuid())
+  userId      String
+  date        DateTime  @default(now())
+  totalHeures Float
+  retards     Int       @default(0)
+  absences    Int       @default(0)
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user        User      @relation(fields: [userId], references: [id])
+
+  // Indexes
+  @@unique([userId, date])
+  @@index([date])
+  @@index([userId])
+}
+
+// Nouvelle table pour gérer les lieux de travail
+model LieuTravail {
+  id          String    @id @default(cuid())
+  nom         String
+  adresse     String
+  latitude    Float
+  longitude   Float
+  rayonValide Int      @default(100)  // en mètres
+  actif       Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([latitude, longitude])
+}
+
+// Nouvelle table pour les horaires de travail
+model HoraireTravail {
+  id          String    @id @default(cuid())
+  userId      String
+  jourSemaine Int      // 0-6 (dimanche-samedi)
+  heureDebut  String    // format "HH:mm"
+  heureFin    String    // format "HH:mm"
+  pauseDebut  String?   // format "HH:mm"
+  pauseFin    String?   // format "HH:mm"
+  actif       Boolean   @default(true)
+
+  @@index([userId, jourSemaine])
 }
 
 enum Role {
@@ -87,10 +178,13 @@ enum Role {
 enum PointageType {
   ARRIVEE
   DEPART
+  PAUSE_DEBUT
+  PAUSE_FIN
 }
 
 enum PointageStatus {
   EN_ATTENTE
   VALIDE
   REJETE
-} 
+  MODIFIE
+}

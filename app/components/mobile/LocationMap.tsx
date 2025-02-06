@@ -1,25 +1,28 @@
 "use client";
 import { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import type { MapContainer as MapContainerType, Marker as MarkerType } from 'react-leaflet';
+import type { Map as LeafletMap } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import type { MapContainerProps } from 'react-leaflet';
+import type { LeafletEvent } from 'leaflet';
 
 // Chargement dynamique de react-leaflet pour éviter les problèmes de SSR
-const MapContainer = dynamic(
+const MapContainerDynamic = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
   { ssr: false }
-) as typeof MapContainerType;
+);
 
-const TileLayer = dynamic(
+const TileLayerDynamic = dynamic(
   () => import('react-leaflet').then((mod) => mod.TileLayer),
   { ssr: false }
 );
 
-const Marker = dynamic(
+const MarkerDynamic = dynamic(
   () => import('react-leaflet').then((mod) => mod.Marker),
   { ssr: false }
-) as typeof MarkerType;
+);
 
-const Popup = dynamic(
+const PopupDynamic = dynamic(
   () => import('react-leaflet').then((mod) => mod.Popup),
   { ssr: false }
 );
@@ -29,34 +32,47 @@ interface LocationMapProps {
   longitude: number;
 }
 
+interface MapReadyEvent extends LeafletEvent {
+  target: LeafletMap;
+}
+
 export default function LocationMap({ latitude, longitude }: LocationMapProps) {
-  const mapRef = useRef<MapContainerType | null>(null);
+  const mapRef = useRef<LeafletMap>(null);
 
   useEffect(() => {
-    // Importer les styles CSS de Leaflet
-    void import('leaflet/dist/leaflet.css');
+    // Initialisation de la carte si nécessaire
+    if (mapRef.current) {
+      mapRef.current.invalidateSize();
+    }
   }, []);
 
   if (typeof window === "undefined") return null;
 
+  const handleMapReady: MapContainerProps['whenReady'] = (map: MapReadyEvent) => {
+    if (map.target && mapRef.current !== map.target) {
+      mapRef.current = map.target;
+    }
+  };
+
   return (
     <div className="relative h-[300px] w-full rounded-lg overflow-hidden">
-      <MapContainer
+      <MapContainerDynamic
         center={[latitude, longitude]}
         zoom={15}
         style={{ height: "100%", width: "100%" }}
         ref={mapRef}
+        whenReady={handleMapReady}
       >
-        <TileLayer
+        <TileLayerDynamic
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Marker position={[latitude, longitude]}>
-          <Popup>
+        <MarkerDynamic position={[latitude, longitude]}>
+          <PopupDynamic>
             Votre position actuelle
-          </Popup>
-        </Marker>
-      </MapContainer>
+          </PopupDynamic>
+        </MarkerDynamic>
+      </MapContainerDynamic>
     </div>
   );
 } 
