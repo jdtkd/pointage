@@ -2,10 +2,10 @@
 CREATE TYPE "Role" AS ENUM ('ADMIN', 'MANAGER', 'RH', 'EMPLOYE');
 
 -- CreateEnum
-CREATE TYPE "PointageType" AS ENUM ('ARRIVEE', 'DEPART', 'PAUSE_DEBUT', 'PAUSE_FIN');
+CREATE TYPE "PointageType" AS ENUM ('ARRIVEE', 'DEPART');
 
 -- CreateEnum
-CREATE TYPE "PointageStatus" AS ENUM ('EN_ATTENTE', 'VALIDE', 'REJETE', 'MODIFIE');
+CREATE TYPE "PointageStatus" AS ENUM ('EN_ATTENTE', 'VALIDE', 'REJETE');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -16,10 +16,10 @@ CREATE TABLE "User" (
     "lastName" TEXT,
     "role" "Role" NOT NULL DEFAULT 'EMPLOYE',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "departement" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "lastLoginAt" TIMESTAMP(3),
-    "departement" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -46,26 +46,9 @@ CREATE TABLE "ValidePar" (
     "valideurId" TEXT NOT NULL,
     "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "commentaire" TEXT,
+    "status" "PointageStatus" NOT NULL,
 
     CONSTRAINT "ValidePar_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Preferences" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "notifPointage" BOOLEAN NOT NULL DEFAULT true,
-    "notifEmail" BOOLEAN NOT NULL DEFAULT true,
-    "notifPush" BOOLEAN NOT NULL DEFAULT true,
-    "geolocAuto" BOOLEAN NOT NULL DEFAULT true,
-    "rayonTolerance" INTEGER NOT NULL DEFAULT 100,
-    "fuseauHoraire" TEXT NOT NULL DEFAULT 'Europe/Paris',
-    "themePreference" TEXT NOT NULL DEFAULT 'system',
-    "languePreference" TEXT NOT NULL DEFAULT 'fr',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "Preferences_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -96,6 +79,18 @@ CREATE TABLE "PointageStats" (
     CONSTRAINT "PointageStats_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "HoraireTravail" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "jourSemaine" INTEGER NOT NULL,
+    "heureDebut" TEXT NOT NULL,
+    "heureFin" TEXT NOT NULL,
+    "actif" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "HoraireTravail_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_clerkId_key" ON "User"("clerkId");
 
@@ -118,16 +113,16 @@ CREATE INDEX "Pointage_timestamp_idx" ON "Pointage"("timestamp");
 CREATE INDEX "Pointage_status_idx" ON "Pointage"("status");
 
 -- CreateIndex
+CREATE INDEX "Pointage_type_idx" ON "Pointage"("type");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "ValidePar_pointageId_key" ON "ValidePar"("pointageId");
 
 -- CreateIndex
 CREATE INDEX "ValidePar_valideurId_idx" ON "ValidePar"("valideurId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Preferences_userId_key" ON "Preferences"("userId");
-
--- CreateIndex
-CREATE INDEX "Preferences_userId_idx" ON "Preferences"("userId");
+CREATE INDEX "ValidePar_timestamp_idx" ON "ValidePar"("timestamp");
 
 -- CreateIndex
 CREATE INDEX "AuditLog_model_recordId_idx" ON "AuditLog"("model", "recordId");
@@ -142,7 +137,13 @@ CREATE INDEX "AuditLog_timestamp_idx" ON "AuditLog"("timestamp");
 CREATE INDEX "PointageStats_date_idx" ON "PointageStats"("date");
 
 -- CreateIndex
+CREATE INDEX "PointageStats_userId_idx" ON "PointageStats"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "PointageStats_userId_date_key" ON "PointageStats"("userId", "date");
+
+-- CreateIndex
+CREATE INDEX "HoraireTravail_userId_jourSemaine_idx" ON "HoraireTravail"("userId", "jourSemaine");
 
 -- AddForeignKey
 ALTER TABLE "Pointage" ADD CONSTRAINT "Pointage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -151,7 +152,10 @@ ALTER TABLE "Pointage" ADD CONSTRAINT "Pointage_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "ValidePar" ADD CONSTRAINT "ValidePar_pointageId_fkey" FOREIGN KEY ("pointageId") REFERENCES "Pointage"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Preferences" ADD CONSTRAINT "Preferences_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ValidePar" ADD CONSTRAINT "ValidePar_valideurId_fkey" FOREIGN KEY ("valideurId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PointageStats" ADD CONSTRAINT "PointageStats_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -12,6 +12,9 @@ interface TempsTravail {
   minutes: number;
 }
 
+const QUOTA_MENSUEL = 173.3; // 173.3 heures par mois
+const QUOTA_JOURNALIER = 8; // 8 heures par jour
+
 export default function StatistiquesTravail() {
   const { pointages } = usePointageStore();
 
@@ -22,7 +25,13 @@ export default function StatistiquesTravail() {
       new Date(p.timestamp).toLocaleDateString() === aujourdhui
     );
 
-    return calculerTempsTravailPourPointages(pointagesAujourdhui);
+    const temps = calculerTempsTravailPourPointages(pointagesAujourdhui);
+    const quotaAtteint = temps.heures + (temps.minutes / 60) >= QUOTA_JOURNALIER;
+
+    return {
+      ...temps,
+      quotaAtteint
+    };
   };
 
   // Fonction utilitaire pour calculer le temps entre arrivée et départ
@@ -47,6 +56,8 @@ export default function StatistiquesTravail() {
   const calculerTempsMensuel = () => {
     const moisActuel = new Date().getMonth();
     const anneeActuelle = new Date().getFullYear();
+    const joursDansMois = new Date(anneeActuelle, moisActuel + 1, 0).getDate();
+    const joursOuvres = calculerJoursOuvres(anneeActuelle, moisActuel);
 
     // Grouper les pointages par jour
     const pointagesParJour = pointages.reduce<PointagesParJour>((acc, pointage) => {
@@ -63,45 +74,73 @@ export default function StatistiquesTravail() {
 
     // Calculer le temps total pour le mois en heures décimales
     let tempsTotal = 0;
-
     Object.values(pointagesParJour).forEach((pointagesJour) => {
       const { heures, minutes } = calculerTempsTravailPourPointages(pointagesJour);
-      // Convertir en heures décimales
       tempsTotal += heures + (minutes / 60);
     });
 
     const joursTravailles = Object.keys(pointagesParJour).length;
     const moyenneParJour = joursTravailles > 0 ? (tempsTotal / joursTravailles).toFixed(1) : "0";
+    const progression = (tempsTotal / QUOTA_MENSUEL) * 100;
+    const objectifJournalier = (QUOTA_MENSUEL / joursOuvres).toFixed(1);
 
     return {
-      total: tempsTotal.toFixed(1), // Arrondi à 1 décimale
+      total: tempsTotal.toFixed(1),
       joursTravailles,
-      moyenneParJour
+      moyenneParJour,
+      progression: Math.min(progression, 100).toFixed(1),
+      objectifJournalier,
+      joursOuvres
     };
   };
 
-  // Formater le temps journalier pour l'affichage
-  const formatTempsJournalier = () => {
-    const { heures, minutes } = calculerTempsJournalier();
-    if (heures === 0 && minutes === 0) return '--:--';
-    return `${heures}h${minutes.toString().padStart(2, '0')}`;
+  // Calculer les jours ouvrés du mois (hors weekends)
+  const calculerJoursOuvres = (annee: number, mois: number) => {
+    const joursDansMois = new Date(annee, mois + 1, 0).getDate();
+    let joursOuvres = 0;
+    
+    for (let jour = 1; jour <= joursDansMois; jour++) {
+      const date = new Date(annee, mois, jour);
+      const jourSemaine = date.getDay();
+      if (jourSemaine !== 0 && jourSemaine !== 6) { // 0 = dimanche, 6 = samedi
+        joursOuvres++;
+      }
+    }
+    
+    return joursOuvres;
   };
 
+  const tempsJournalier = calculerTempsJournalier();
   const tempsMensuel = calculerTempsMensuel();
 
   return (
-    <div className="stats shadow w-full mb-4">
+    <div className="stats stats-vertical shadow w-full mb-4">
       <div className="stat">
         <div className="stat-title">Aujourd'hui</div>
-        <div className="stat-value text-primary">{formatTempsJournalier()}</div>
-        <div className="stat-desc">Temps de travail</div>
+        <div className={`stat-value ${tempsJournalier.quotaAtteint ? 'text-success' : 'text-primary'}`}>
+          {`${tempsJournalier.heures}h${tempsJournalier.minutes.toString().padStart(2, '0')}`}
+        </div>
+        <div className="stat-desc">
+          Objectif : {QUOTA_JOURNALIER}h
+        </div>
       </div>
+
       <div className="stat">
         <div className="stat-title">Ce mois</div>
         <div className="stat-value text-secondary">{tempsMensuel.total}h</div>
-        <div className="stat-desc">
-          {tempsMensuel.joursTravailles} jour{tempsMensuel.joursTravailles > 1 ? 's' : ''} 
-          ({tempsMensuel.moyenneParJour}h/jour)
+        <div className="stat-desc flex flex-col gap-1">
+          <div>
+            {tempsMensuel.joursTravailles}/{tempsMensuel.joursOuvres} jours
+          </div>
+          <div className="w-full bg-base-200 rounded-full h-2">
+            <div 
+              className="bg-secondary h-2 rounded-full transition-all"
+              style={{ width: `${tempsMensuel.progression}%` }}
+            />
+          </div>
+          <div>
+            {tempsMensuel.progression}% du quota ({QUOTA_MENSUEL}h)
+          </div>
         </div>
       </div>
     </div>
