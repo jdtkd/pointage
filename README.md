@@ -156,7 +156,7 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 
 version web:
-<img width="956" alt="Capture d’écran 2025-02-08 223215" src="https://github.com/user-attachments/assets/7d90e630-8763-4a3c-80e9-97e7118e5f41" />
+
 
 
 
