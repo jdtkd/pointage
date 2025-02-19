@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -9,7 +8,7 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    const { userId } = auth();
+    const userId = ''; // TODO: Implémenter votre logique d'authentification
     if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 });
     }

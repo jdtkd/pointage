@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
 import { prisma } from '@/app/lib/prisma';
 
 export async function POST(req: Request) {
   try {
-    const { userId } = auth();
+    const userId = ''; // TODO: Implémenter votre logique d'authentification
     if (!userId) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }

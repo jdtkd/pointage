@@ -157,3 +157,33 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 version mobil:
 https://github.com/jdtkd/pointage/blob/main/Capture%20d%E2%80%99%C3%A9cran%202025-02-08%20223345.png
+
+## Configuration
+
+1. Créez un compte sur [Clerk](https://clerk.dev)
+2. Créez une nouvelle application
+3. Copiez les clés d'API depuis le tableau de bord Clerk
+4. Créez un fichier `.env` à la racine du projet
+5. Remplissez les variables d'environnement avec vos clés
+
+## Installation
+
+```bash
+npm install
+npx prisma generate
+npm run dev
+```
+
+## Variables d'environnement requises
+
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `NEXT_PUBLIC_CLERK_SIGN_IN_URL`
+- `NEXT_PUBLIC_CLERK_SIGN_UP_URL`
+- `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL`
+- `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL`
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_KEY`

@@ -1,27 +1,38 @@
 "use client";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { Icon } from 'leaflet';
 import ClientOnly from './ClientOnly';
 
 interface MapProps {
-  position: [number, number];
+  lat: number;
+  lng: number;
   zoom?: number;
 }
 
-const Map = ({ position, zoom = 13 }: MapProps) => {
+const Map = ({ lat, lng, zoom = 13 }: MapProps) => {
+  const position: [number, number] = [lat, lng];
+
+  const customIcon = new Icon({
+    iconUrl: '/marker-icon.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+  });
+
   return (
     <ClientOnly>
       <MapContainer 
         center={position} 
         zoom={zoom} 
-        style={{ height: '300px', width: '100%' }}
+        style={{ height: '400px', width: '100%' }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        <Marker position={position}>
+        <Marker position={position} icon={customIcon}>
           <Popup>
-            Position de pointage
+            Position du pointage
           </Popup>
         </Marker>
       </MapContainer>

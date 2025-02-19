@@ -8,6 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -15,6 +16,7 @@ model User {
   clerkId   String     @unique
   email     String     @unique
   name      String?
+  role      String     @default("USER") // USER, ADMIN, MANAGER, RH
   pointages Pointage[]
   horaires  Horaire[]
   createdAt DateTime   @default(now())
@@ -23,27 +25,43 @@ model User {
 
 model Pointage {
   id          String    @id @default(cuid())
-  type        String    // ARRIVEE ou DEPART
+  type        PointageType  // Enum pour ARRIVEE ou DEPART
   timestamp   DateTime  @default(now())
-  location    Json      // { lat: number, lng: number }
+  location    Json      // { lat: number, lng: number, accuracy?: number }
   commentaire String?
-  status      String    @default("EN_ATTENTE") // EN_ATTENTE, VALIDE, REJETE
+  status      PointageStatus @default(EN_ATTENTE)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
   validation  Validation?
+  historique  PointageHistorique[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@index([userId])
   @@index([timestamp])
+  @@index([status])
+}
+
+model PointageHistorique {
+  id          String    @id @default(cuid())
+  pointage    Pointage  @relation(fields: [pointageId], references: [id], onDelete: Cascade)
+  pointageId  String
+  status      PointageStatus
+  commentaire String?
+  modifiePar  String    // clerkId de l'utilisateur qui a modifié
+  createdAt   DateTime  @default(now())
+
+  @@index([pointageId])
+  @@index([createdAt])
 }
 
 model Validation {
   id          String    @id @default(cuid())
-  status      String    // VALIDE ou REJETE
+  status      PointageStatus
   commentaire String?
   pointage    Pointage  @relation(fields: [pointageId], references: [id], onDelete: Cascade)
   pointageId  String    @unique
+  valideurId  String    // clerkId du valideur
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -72,4 +90,15 @@ model Exception {
   updatedAt DateTime  @updatedAt
 
   @@index([date])
+}
+
+enum PointageType {
+  ARRIVEE
+  DEPART
+}
+
+enum PointageStatus {
+  EN_ATTENTE
+  VALIDE
+  REJETE
 }

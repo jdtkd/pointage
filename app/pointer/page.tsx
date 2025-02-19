@@ -6,6 +6,7 @@ import { usePointageStore, PointageType } from '../stores/pointageStore';
 import { Icons } from '../components/icons';
 import { isWorkingDay, formatDateToFr } from '../lib/utils';
 import { toast } from 'sonner';
+import { pointageService } from '../lib/services/pointageService';
 
 export default function PointerPage() {
   const router = useRouter();

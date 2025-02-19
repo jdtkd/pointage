@@ -1,7 +1,6 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import { usePointageStore } from './stores/pointageStore';
-import { useUser } from "@clerk/nextjs";
 import { useState, useEffect } from 'react';
 import { Icons } from './components/icons';
 import { motion } from 'framer-motion';
@@ -38,7 +37,6 @@ const StatCard = ({ title, value, icon, color }: StatCardProps) => (
 
 export default function HomePage() {
   const router = useRouter();
-  const { isSignedIn, user } = useUser();
   const { pointages } = usePointageStore();
   const [stats, setStats] = useState({
     totalPointages: 0,
@@ -48,12 +46,6 @@ export default function HomePage() {
     quotaAtteint: 0,
     heuresRestantes: '0h'
   });
-
-  useEffect(() => {
-    if (!isSignedIn) {
-      router.push('/sign-in');
-    }
-  }, [isSignedIn, router]);
 
   useEffect(() => {
     // Calcul des statistiques
@@ -82,8 +74,6 @@ export default function HomePage() {
     router.push('/historique');
   };
 
-  if (!isSignedIn) return null;
-
   return (
     <div className="container mx-auto p-4">
       <motion.div 
@@ -100,7 +90,7 @@ export default function HomePage() {
             animate={{ x: 0 }}
             transition={{ duration: 0.3 }}
           >
-            Bonjour, {user?.firstName} 👋
+            Tableau de bord 👋
           </motion.h1>
           <p className="text-base-content/70">
             Bienvenue sur votre tableau de bord

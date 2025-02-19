@@ -1,18 +1,16 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)' ])
+export function middleware(request: NextRequest) {
+  // Votre logique de middleware ici si nécessaire
+  return NextResponse.next()
+}
 
-export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
-    await auth.protect()
-  }
-})
-
+// Voir "Matching Paths" ci-dessous pour en savoir plus
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
-  ],
-}
+    // Ajoutez ici les routes qui nécessitent un middleware
+    // '/pointer/:path*',
+    // '/historique/:path*',
+  ]
+} 
