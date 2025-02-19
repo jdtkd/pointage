@@ -1,0 +1,61 @@
+### Variables globales
+@baseUrl = http://localhost:3000/api
+@authToken = votre_token_ici
+
+### GET - Récupérer tous les pointages
+GET {{baseUrl}}/pointages
+Authorization: Bearer {{authToken}}
+
+### GET - Récupérer un pointage spécifique
+GET {{baseUrl}}/pointages/{{pointageId}}
+Authorization: Bearer {{authToken}}
+
+### GET - Récupérer les pointages du jour
+GET {{baseUrl}}/pointages/today
+Authorization: Bearer {{authToken}}
+
+### GET - Récupérer les statistiques mensuelles
+GET {{baseUrl}}/pointages/stats
+Authorization: Bearer {{authToken}}
+
+### POST - Créer un nouveau pointage
+POST {{baseUrl}}/pointages
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "type": "ARRIVEE",
+  "timestamp": "{{$datetime iso8601}}",
+  "location": {
+    "lat": 48.8566,
+    "lng": 2.3522
+  },
+  "commentaire": "Test de pointage"
+}
+
+### PUT - Mettre à jour un pointage
+PUT {{baseUrl}}/pointages/{{pointageId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "status": "VALIDE",
+  "commentaire": "Pointage validé"
+}
+
+### DELETE - Supprimer un pointage
+DELETE {{baseUrl}}/pointages/{{pointageId}}
+Authorization: Bearer {{authToken}}
+
+### POST - Valider un pointage
+POST {{baseUrl}}/pointages/{{pointageId}}/validate
+Authorization: Bearer {{authToken}}
+
+### POST - Rejeter un pointage
+POST {{baseUrl}}/pointages/{{pointageId}}/reject
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "motif": "Hors plage horaire autorisée"
+} 

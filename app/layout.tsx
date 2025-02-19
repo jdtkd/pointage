@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import StatistiquesTravail from "./components/StatistiquesTravail";
-import { ClerkProvider } from "@clerk/nextjs";
-import { UserButton } from "@clerk/nextjs";
+import { ClerkProvider } from '@clerk/nextjs';
+import { frFR } from '@clerk/localizations';
+import { Toaster } from 'sonner';
 import NavbarClient from "./components/NavbarClient";
+import MobileBottomNav from './components/MobileBottomNav';
+import Link from 'next/link';
+import { Icons } from './components/icons';
+import { HeuresLayout } from './components/HeuresLayout';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -13,8 +17,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Application de Pointage",
-  description: "Application de pointage de présence moderne et intuitive",
+  title: "Pointage",
+  description: "Application de pointage des heures de travail",
+  manifest: "/manifest.json",
+  icons: [
+    { rel: "icon", url: "/favicon.ico" },
+    { rel: "apple-touch-icon", url: "/icon-192x192.png" }
+  ]
 };
 
 export default function RootLayout({
@@ -23,9 +32,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="fr" data-theme="emerald">
-        <body className={`${inter.variable} font-sans antialiased min-h-screen bg-base-200`}>
+    <ClerkProvider localization={frFR}>
+      <html lang="fr" data-theme="light" className="scroll-smooth">
+        <body className={`${inter.variable} font-sans antialiased min-h-screen bg-base-100`}>
           <div className="drawer lg:drawer-open">
             <input id="main-drawer" type="checkbox" className="drawer-toggle" />
             
@@ -35,31 +44,68 @@ export default function RootLayout({
               <NavbarClient />
               
               {/* Main content */}
-              <main className="flex-1 p-4">
-                {children}
+              <main className="flex-1 pb-16 lg:pb-0">
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                  {children}
+                </div>
               </main>
+              
+              {/* Navigation mobile */}
+              <MobileBottomNav />
             </div>
             
             {/* Sidebar */}
             <div className="drawer-side">
               <label htmlFor="main-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
-              <aside className="w-80 min-h-screen bg-base-100">
-                <div className="p-4">
-                  <h2 className="text-2xl font-bold text-center mb-6">Pointage App</h2>
+              <aside className="w-72 min-h-screen bg-white dark:bg-gray-800 border-r">
+                <div className="flex flex-col h-full">
+                  <div className="p-4 border-b">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                        <Icons.clock className="w-5 h-5 text-white" />
+                      </div>
+                      <h1 className="text-lg font-semibold">Pointage App</h1>
+                    </div>
+                  </div>
                   
-                  {/* Statistiques client */}
-                  <StatistiquesTravail />
-                  
-                  <ul className="menu menu-vertical gap-2 text-base font-medium">
-                    <li><a href="/" className="text-base">🏠 Accueil</a></li>
-                    <li><a href="/pointer" className="text-base">⏰ Pointer</a></li>
-                    <li><a href="/historique" className="text-base">📊 Historique</a></li>
-                    <li><a href="/parametres" className="text-base">⚙️ Paramètres</a></li>
-                  </ul>
+                  <nav className="flex-1 p-4 space-y-1">
+                    <Link 
+                      href="/"
+                      className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Icons.home className="w-5 h-5" />
+                      <span>Accueil</span>
+                    </Link>
+                    
+                    <Link 
+                      href="/pointer"
+                      className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Icons.clock className="w-5 h-5" />
+                      <span>Pointer</span>
+                    </Link>
+                    
+                    <Link 
+                      href="/historique"
+                      className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Icons.history className="w-5 h-5" />
+                      <span>Historique</span>
+                    </Link>
+                  </nav>
+
+                  <div className="p-4 border-t">
+                    <HeuresLayout />
+                  </div>
                 </div>
               </aside>
             </div>
           </div>
+          <Toaster 
+            position="top-center"
+            expand={true}
+            richColors
+          />
         </body>
       </html>
     </ClerkProvider>

@@ -1,0 +1,26 @@
+@baseUrl = http://localhost:3000/api
+@authToken = your_clerk_token_here
+
+### Valider un pointage
+POST {{baseUrl}}/validations
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "pointageId": "your_pointage_id",
+  "status": "VALIDE",
+  "commentaire": "Validation test",
+  "motif": null
+}
+
+### Rejeter un pointage
+POST {{baseUrl}}/validations
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "pointageId": "your_pointage_id",
+  "status": "REJETE",
+  "commentaire": "Rejet test",
+  "motif": "Localisation incorrecte"
+} 

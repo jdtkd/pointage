@@ -4,10 +4,10 @@ import { persist } from 'zustand/middleware';
 export type PointageType = 'ARRIVEE' | 'DEPART';
 
 export interface Pointage {
-  id: string;
+  id?: string;
   type: PointageType;
   timestamp: string;
-  location?: {
+  location: {
     lat: number;
     lng: number;
   };

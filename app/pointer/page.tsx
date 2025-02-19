@@ -1,8 +1,11 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LocationMap from '../components/mobile/LocationMap';
 import { usePointageStore, PointageType } from '../stores/pointageStore';
+import { Icons } from '../components/icons';
+import { isWorkingDay, formatDateToFr } from '../lib/utils';
+import { toast } from 'sonner';
 
 export default function PointerPage() {
   const router = useRouter();
@@ -11,6 +14,12 @@ export default function PointerPage() {
   const [showMap, setShowMap] = useState(false);
   const [commentaire, setCommentaire] = useState('');
   const { addPointage, setIsPointing, dernierPointage, pointages } = usePointageStore();
+  const [isWorkDay, setIsWorkDay] = useState(false);
+
+  useEffect(() => {
+    const today = new Date();
+    setIsWorkDay(isWorkingDay(today));
+  }, []);
 
   const handleGeolocation = () => {
     setIsLoading(true);
@@ -73,13 +82,18 @@ export default function PointerPage() {
   };
 
   const handlePointage = async (type: PointageType) => {
+    if (!isWorkDay) {
+      toast.error("Le pointage n'est possible que du lundi au vendredi");
+      return;
+    }
+
     if (!location) {
-      alert('Veuillez d\'abord obtenir votre position');
+      toast.error("Veuillez activer votre géolocalisation");
       return;
     }
 
     if (!isHeureAutorisee()) {
-      alert('Les pointages sont uniquement autorisés entre 8h00 et 20h00');
+      toast.error("Le pointage n'est pas autorisé à cette heure");
       return;
     }
 
@@ -94,132 +108,111 @@ export default function PointerPage() {
       return;
     }
 
-    setIsPointing(true);
-    
     try {
-      const success = addPointage({
+      setIsPointing(true);
+      const newPointage = {
         type,
         timestamp: new Date().toISOString(),
-        location,
-        commentaire: commentaire.trim() || undefined,
-      });
-
-      if (success) {
-        router.push('/historique');
-      }
+        location: location,
+        commentaire: commentaire
+      };
+      
+      addPointage(newPointage);
+      toast.success(`Pointage ${type.toLowerCase()} enregistré avec succès`);
+      router.push('/');
     } catch (error) {
-      console.error('Erreur lors du pointage:', error);
-      alert('Une erreur est survenue lors du pointage');
+      toast.error("Une erreur est survenue lors du pointage");
+      console.error(error);
     } finally {
       setIsPointing(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body p-4 sm:p-6">
-          <h2 className="card-title text-xl sm:text-2xl mb-4 sm:mb-6">Pointage</h2>
-          
-          {/* Status actuel */}
-          <div className="alert alert-info mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <div className="flex flex-col">
-              <span className="font-bold">
-                {dernierPointage ? 
-                  `Dernier pointage: ${dernierPointage.type}` : 
-                  'Non pointé'}
-              </span>
-              <span className="text-sm">
-                {dernierPointage ? 
-                  new Date(dernierPointage.timestamp).toLocaleString() : 
-                  '--:--'}
-              </span>
+    <div className="container mx-auto p-4">
+      <div className="flex flex-col gap-4">
+        {/* En-tête */}
+        <div className="bg-base-100 rounded-box p-4 shadow-sm">
+          <h1 className="text-2xl font-bold mb-2">Pointer</h1>
+          {!isWorkDay ? (
+            <div className="alert alert-warning">
+              <Icons.warning className="w-5 h-5" />
+              <span>Le pointage n'est possible que du lundi au vendredi</span>
             </div>
-          </div>
-
-          {/* Actions rapides pour mobile */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <button 
-              className={`btn btn-primary ${isLoading ? 'loading' : ''}`}
-              onClick={handleGeolocation}
-              disabled={isLoading}
-            >
-              📍 Position
-            </button>
-            <button 
-              className="btn btn-secondary"
-              onClick={() => setShowMap(!showMap)}
-              disabled={!location}
-            >
-              🗺️ Carte
-            </button>
-          </div>
-
-          {/* Carte si activée */}
-          {showMap && location && (
-            <div className="mb-4">
-              <LocationMap latitude={location.lat} longitude={location.lng} />
-            </div>
+          ) : (
+            <p className="text-base-content/70">
+              Enregistrez votre arrivée ou départ pour {formatDateToFr(new Date())}
+            </p>
           )}
+        </div>
 
-          {/* Position détectée */}
-          {location && (
-            <div className="alert alert-success mb-4 text-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Position OK: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}</span>
+        {/* Carte de pointage */}
+        <div className="bg-base-100 rounded-box p-4 shadow-sm">
+          <div className="space-y-4">
+            {/* Boutons de géolocalisation et carte */}
+            <div className="grid grid-cols-2 gap-2">
+              <button 
+                className={`btn btn-primary ${isLoading ? 'loading' : ''}`}
+                onClick={handleGeolocation}
+                disabled={isLoading}
+              >
+                <Icons.location className="w-5 h-5 mr-2" />
+                Position
+              </button>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowMap(!showMap)}
+                disabled={!location}
+              >
+                <Icons.map className="w-5 h-5 mr-2" />
+                Carte
+              </button>
             </div>
-          )}
 
-          {/* Commentaire */}
-          <div className="form-control mb-4">
-            <textarea 
-              className="textarea textarea-bordered h-16" 
-              placeholder="Commentaire (optionnel)"
-              value={commentaire}
-              onChange={(e) => setCommentaire(e.target.value)}
-            />
-          </div>
+            {/* Carte */}
+            {showMap && location && (
+              <div className="rounded-box overflow-hidden">
+                <LocationMap latitude={location.lat} longitude={location.lng} />
+              </div>
+            )}
 
-          {/* Message d'avertissement pour les horaires */}
-          {!isHeureAutorisee() && (
-            <div className="alert alert-warning mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-              </svg>
-              <span>Les pointages sont uniquement autorisés entre 8h00 et 20h00</span>
+            {/* Position détectée */}
+            {location && (
+              <div className="alert alert-success text-sm">
+                <Icons.check className="w-5 h-5" />
+                <span>Position OK: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}</span>
+              </div>
+            )}
+
+            {/* Commentaire */}
+            <div className="form-control">
+              <textarea 
+                className="textarea textarea-bordered h-16" 
+                placeholder="Commentaire (optionnel)"
+                value={commentaire}
+                onChange={(e) => setCommentaire(e.target.value)}
+              />
             </div>
-          )}
 
-          {/* Boutons d'action */}
-          <div className="flex flex-col gap-2">
-            <button 
-              className="btn btn-primary btn-lg"
-              onClick={() => handlePointage('ARRIVEE')}
-              disabled={!location || 
-                        !peutPointerArrivee || 
-                        !isHeureAutorisee()}
-            >
-              ⏰ Pointer l'arrivée
-            </button>
-            <button 
-              className="btn btn-secondary btn-lg"
-              onClick={() => handlePointage('DEPART')}
-              disabled={!location || 
-                        !peutPointerDepart || 
-                        !isHeureAutorisee()}
-            >
-              🏃 Pointer le départ
-            </button>
-          </div>
-
-          {/* Indicateur de synchronisation */}
-          <div className="text-center text-sm text-base-content/70 mt-4">
-            Dernière synchronisation: {new Date().toLocaleTimeString()}
+            {/* Boutons de pointage */}
+            <div className="grid grid-cols-1 gap-2">
+              <button 
+                className="btn btn-primary btn-lg"
+                onClick={() => handlePointage('ARRIVEE')}
+                disabled={!location || !peutPointerArrivee || !isHeureAutorisee() || !isWorkDay}
+              >
+                <Icons.clock className="w-6 h-6 mr-2" />
+                Pointer l'arrivée
+              </button>
+              <button 
+                className="btn btn-secondary btn-lg"
+                onClick={() => handlePointage('DEPART')}
+                disabled={!location || !peutPointerDepart || !isHeureAutorisee() || !isWorkDay}
+              >
+                <Icons.logout className="w-6 h-6 mr-2" />
+                Pointer le départ
+              </button>
+            </div>
           </div>
         </div>
       </div>

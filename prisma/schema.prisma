@@ -8,130 +8,68 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
-
-enum Role {
-  ADMIN
-  MANAGER
-  RH
-  EMPLOYE
-}
-
-enum PointageType {
-  ARRIVEE
-  DEPART
-}
-
-enum PointageStatus {
-  EN_ATTENTE
-  VALIDE
-  REJETE
 }
 
 model User {
-  id            String         @id @default(cuid())
-  clerkId       String         @unique
-  email         String         @unique
-  firstName     String?
-  lastName      String?
-  role          Role          @default(EMPLOYE)
-  isActive      Boolean       @default(true)
-  departement   String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  lastLoginAt   DateTime?
-
-  // Relations
-  pointages     Pointage[]
-  validations   ValidePar[]   @relation("Valideur")
-  auditLogs     AuditLog[]
-  stats         PointageStats[]
-
-  @@index([email])
-  @@index([clerkId])
+  id        String     @id @default(cuid())
+  clerkId   String     @unique
+  email     String     @unique
+  name      String?
+  pointages Pointage[]
+  horaires  Horaire[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Pointage {
-  id          String         @id @default(cuid())
-  type        PointageType
-  timestamp   DateTime       @default(now())
-  location    Json?         // { lat: number, lng: number }
-  commentaire String?
-  status      PointageStatus @default(EN_ATTENTE)
-  userId      String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  // Relations
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  validation  ValidePar?
-
-  @@index([userId, timestamp, type])
-  @@index([timestamp])
-  @@index([status])
-  @@index([type])
-}
-
-model ValidePar {
-  id          String        @id @default(cuid())
-  pointageId  String        @unique
-  valideurId  String
-  timestamp   DateTime      @default(now())
-  commentaire String?
-  status      PointageStatus
-
-  // Relations
-  pointage    Pointage      @relation(fields: [pointageId], references: [id], onDelete: Cascade)
-  valideur    User          @relation("Valideur", fields: [valideurId], references: [id])
-
-  @@index([valideurId])
-  @@index([timestamp])
-}
-
-model AuditLog {
   id          String    @id @default(cuid())
-  action      String    // CREATE, UPDATE, DELETE
-  model       String    // nom du modèle affecté
-  recordId    String    // ID de l'enregistrement affecté
-  userId      String
-  changes     Json      // { before: {}, after: {} }
-  ipAddress   String?
-  userAgent   String?
+  type        String    // ARRIVEE ou DEPART
   timestamp   DateTime  @default(now())
-
-  // Relations
-  user        User      @relation(fields: [userId], references: [id])
-
-  @@index([model, recordId])
-  @@index([userId])
-  @@index([timestamp])
-}
-
-model PointageStats {
-  id          String    @id @default(cuid())
+  location    Json      // { lat: number, lng: number }
+  commentaire String?
+  status      String    @default("EN_ATTENTE") // EN_ATTENTE, VALIDE, REJETE
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
-  date        DateTime  @default(now())
-  totalHeures Float
-  retards     Int       @default(0)
-  absences    Int       @default(0)
+  validation  Validation?
+  createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // Relations
-  user        User      @relation(fields: [userId], references: [id])
+  @@index([userId])
+  @@index([timestamp])
+}
 
-  @@unique([userId, date])
-  @@index([date])
+model Validation {
+  id          String    @id @default(cuid())
+  status      String    // VALIDE ou REJETE
+  commentaire String?
+  pointage    Pointage  @relation(fields: [pointageId], references: [id], onDelete: Cascade)
+  pointageId  String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Horaire {
+  id          String    @id @default(cuid())
+  jourSemaine Int      // 1 = Lundi, 7 = Dimanche
+  heureDebut  String    // Format "HH:mm"
+  heureFin    String    // Format "HH:mm"
+  pauseDebut  String?   // Format "HH:mm"
+  pauseFin    String?   // Format "HH:mm"
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   @@index([userId])
 }
 
-model HoraireTravail {
-  id          String    @id @default(cuid())
-  userId      String
-  jourSemaine Int       // 0-6 (dimanche-samedi)
-  heureDebut  String    // format "HH:mm"
-  heureFin    String    // format "HH:mm"
-  actif       Boolean   @default(true)
+model Exception {
+  id        String    @id @default(cuid())
+  date      DateTime
+  type      String    // FERME, OUVERT
+  motif     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  @@index([userId, jourSemaine])
+  @@index([date])
 }

@@ -3,25 +3,33 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "npm run check-env && next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check-env": "ts-node scripts/check-env.ts"
   },
   "dependencies": {
     "@clerk/localizations": "^3.10.4",
-    "@clerk/nextjs": "^6.11.1",
+    "@clerk/nextjs": "^6.11.3",
+    "@iconify/react": "^5.2.0",
     "@prisma/client": "^6.3.1",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.48.1",
     "@types/maplibre-gl": "^1.13.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.4.4",
     "leaflet": "^1.9.4",
+    "lucide-react": "^0.475.0",
     "maplibre-gl": "^5.1.0",
     "next": "15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-leaflet": "^5.0.0",
+    "sonner": "^1.7.4",
+    "tailwind-merge": "^3.0.1",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
@@ -37,7 +45,7 @@
     "postcss": "^8",
     "prisma": "^6.3.1",
     "tailwindcss": "^3.4.1",
-    "tsx": "^4.19.2",
+    "tsx": "^3.12.10",
     "typescript": "^5.7.3"
   },
   "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",

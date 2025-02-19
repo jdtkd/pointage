@@ -1,0 +1,15 @@
+@baseUrl = http://localhost:3000/api
+@authToken = your_clerk_token_here
+
+### Récupérer les notifications non lues
+GET {{baseUrl}}/notifications
+Authorization: Bearer {{authToken}}
+
+### Marquer une notification comme lue
+PATCH {{baseUrl}}/notifications
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "notificationId": "your_notification_id"
+} 

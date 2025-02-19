@@ -1,0 +1,52 @@
+@baseUrl = http://localhost:3000/api
+@authToken = votre_token_ici
+
+### Créer un horaire de travail
+POST {{baseUrl}}/horaires
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "jourSemaine": 1,
+  "heureDebut": "09:00",
+  "heureFin": "17:00",
+  "pauseDebut": "12:00",
+  "pauseFin": "13:00"
+}
+
+### Récupérer les horaires
+GET {{baseUrl}}/horaires
+Authorization: Bearer {{authToken}}
+
+### GET - Vérifier si le pointage est autorisé maintenant
+GET {{baseUrl}}/horaires/check
+Authorization: Bearer {{authToken}}
+
+### GET - Récupérer les plages horaires autorisées
+GET {{baseUrl}}/horaires/plages
+Authorization: Bearer {{authToken}}
+
+### POST - Définir une exception pour un jour
+POST {{baseUrl}}/horaires/exceptions
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "date": "2024-02-15",
+  "type": "FERME",
+  "motif": "Jour férié"
+}
+
+### GET - Récupérer les heures travaillées
+GET {{baseUrl}}/horaires/worked
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "debut": "2024-02-01",
+  "fin": "2024-02-15"
+}
+
+### GET - Récupérer le quota mensuel
+GET {{baseUrl}}/horaires/quota
+Authorization: Bearer {{authToken}} 

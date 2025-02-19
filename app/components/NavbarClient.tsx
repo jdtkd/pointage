@@ -1,6 +1,7 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
+import ThemeToggle from "./ThemeToggle";
 
 export default function NavbarClient() {
   return (
@@ -18,6 +19,7 @@ export default function NavbarClient() {
       </div>
       
       <div className="navbar-end gap-2">
+        <ThemeToggle />
         <UserButton 
           afterSignOutUrl="/sign-in"
           appearance={{
