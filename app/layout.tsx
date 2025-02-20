@@ -8,15 +8,15 @@ import Link from 'next/link';
 import { Icons } from './components/icons';
 import { HeuresLayout } from './components/HeuresLayout';
 
-const inter = Inter({
+const inter = Inter({ 
   subsets: ["latin"],
-  weight: ['400', '500', '600', '700'],
+  display: 'swap',
   variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
-  title: "Pointage",
-  description: "Application de pointage des heures de travail",
+  title: "Pointage App",
+  description: "Application de pointage avec géolocalisation",
   manifest: "/manifest.json",
   icons: [
     { rel: "icon", url: "/favicon.ico" },
@@ -30,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" data-theme="light" className="scroll-smooth">
-      <body className={`${inter.variable} font-sans antialiased min-h-screen bg-base-100`}>
+    <html lang="fr" data-theme="light" className={inter.variable}>
+      <body className="min-h-screen bg-background font-sans antialiased">
         <div className="drawer lg:drawer-open">
           <input id="main-drawer" type="checkbox" className="drawer-toggle" />
           
@@ -41,7 +41,7 @@ export default function RootLayout({
             <NavbarClient />
             
             {/* Main content */}
-            <main className="flex-1 pb-16 lg:pb-0">
+            <main className="pb-20 lg:pb-0">
               <div className="max-w-7xl mx-auto px-4 py-6">
                 {children}
               </div>
