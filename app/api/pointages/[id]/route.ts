@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -12,8 +11,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = auth();
-    if (!userId) {
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    if (!session?.user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
@@ -21,7 +20,7 @@ export async function GET(
       .from('pointages')
       .select('*')
       .eq('id', params.id)
-      .eq('user_id', userId)
+      .eq('user_id', session.user.id)
       .single();
 
     if (error) {
@@ -43,8 +42,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = auth();
-    if (!userId) {
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    if (!session?.user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
@@ -54,7 +53,7 @@ export async function PUT(
       .from('pointages')
       .update(body)
       .eq('id', params.id)
-      .eq('user_id', userId)
+      .eq('user_id', session.user.id)
       .select()
       .single();
 
@@ -77,8 +76,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = auth();
-    if (!userId) {
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    if (!session?.user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
@@ -86,7 +85,7 @@ export async function DELETE(
       .from('pointages')
       .delete()
       .eq('id', params.id)
-      .eq('user_id', userId);
+      .eq('user_id', session.user.id);
 
     if (error) throw error;
 

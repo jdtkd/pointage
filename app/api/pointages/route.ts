@@ -8,15 +8,15 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    const userId = ''; // TODO: Implémenter votre logique d'authentification
-    if (!userId) {
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    if (!session?.user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
     const { data: pointages, error } = await supabase
       .from('pointages')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', session.user.id)
       .order('timestamp', { ascending: false });
 
     if (error) throw error;
