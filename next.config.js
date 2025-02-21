@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    // Suppression de appDir car c'est maintenant par défaut dans Next.js 14+
-    // Suppression de turbo car nous n'utilisons plus turbopack
-  },
+  reactStrictMode: true,
+  swcMinify: true,
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -12,6 +10,11 @@ const nextConfig = {
     return config;
   },
   transpilePackages: ['react-leaflet'],
+  output: 'standalone',
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['@iconify/react']
+  }
 }
 
 module.exports = nextConfig 

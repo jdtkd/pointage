@@ -1,12 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 export async function GET() {
+  const supabase = createServerSupabaseClient();
   try {
     const { data: { session }, error: authError } = await supabase.auth.getSession();
     if (!session?.user) {
@@ -29,6 +25,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const supabase = createServerSupabaseClient();
   try {
     const { userId } = auth();
     if (!userId) {
