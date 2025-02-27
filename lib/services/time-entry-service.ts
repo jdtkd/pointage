@@ -93,13 +93,30 @@ export class TimeEntryService {
     return entry;
   }
 
+  // Ajouter un pointage
+  static async addTimeEntry(entry: TimeEntry): Promise<TimeEntry> {
+    timeEntries.push(entry);
+    saveTimeEntries(timeEntries);
+    return entry;
+  }
+
+  // Mettre à jour un pointage
+  static async updateTimeEntry(entryId: string, updates: Partial<TimeEntry>): Promise<TimeEntry> {
+    const index = timeEntries.findIndex(e => e.id === entryId);
+    if (index === -1) throw new Error('Pointage non trouvé');
+
+    timeEntries[index] = { ...timeEntries[index], ...updates };
+    saveTimeEntries(timeEntries);
+    return timeEntries[index];
+  }
+
   // Supprimer un pointage
   static async deleteTimeEntry(entryId: string): Promise<void> {
     timeEntries = timeEntries.filter(entry => entry.id !== entryId);
     saveTimeEntries(timeEntries);
   }
 
-  // Nettoyer les données plus anciennes que X jours
+  // Nettoyer les anciennes données
   static async cleanOldEntries(daysToKeep: number = 30): Promise<void> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
@@ -113,19 +130,6 @@ export class TimeEntryService {
   // Exporter les données
   static async exportData(): Promise<string> {
     return JSON.stringify(timeEntries, null, 2);
-  }
-
-  // Importer des données
-  static async importData(data: string): Promise<void> {
-    try {
-      const entries = JSON.parse(data);
-      if (Array.isArray(entries)) {
-        timeEntries = entries;
-        saveTimeEntries(timeEntries);
-      }
-    } catch (error) {
-      throw new Error('Format de données invalide');
-    }
   }
 
   // Obtenir les statistiques
@@ -205,11 +209,21 @@ export class TimeEntryService {
     const endOfDay = new Date(selectedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    return timeEntries.filter(
-      entry => 
-        entry.userId === userId &&
-        new Date(entry.clockIn) >= startOfDay &&
-        new Date(entry.clockIn) <= endOfDay
+    // Filtrer, trier et dédupliquer les entrées
+    const entries = timeEntries
+      .filter(
+        entry => 
+          entry.userId === userId &&
+          new Date(entry.clockIn) >= startOfDay &&
+          new Date(entry.clockIn) <= endOfDay
+      )
+      .sort((a, b) => new Date(b.clockIn).getTime() - new Date(a.clockIn).getTime());
+
+    // Dédupliquer par ID
+    const uniqueEntries = Array.from(
+      new Map(entries.map(entry => [entry.id, entry])).values()
     );
+
+    return uniqueEntries;
   }
 } 

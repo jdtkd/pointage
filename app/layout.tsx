@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/header";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { OfflineHandler } from '@/components/offline-handler';
+import { ThemeProvider } from "@/components/providers/theme-provider";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -46,23 +47,30 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
       </head>
       <body className={geist.className}>
-        <Providers>
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-1 container mx-auto p-4 sm:px-6 lg:px-8 max-w-7xl">
-              <div className="py-4 sm:py-6 lg:py-8">
-                {children}
-              </div>
-            </main>
-            <footer className="border-t py-4 px-4 sm:px-6 lg:px-8">
-              <div className="container mx-auto text-center text-sm text-muted-foreground">
-                © {new Date().getFullYear()} Système de Pointage
-              </div>
-            </footer>
-          </div>
-          <Toaster />
-          <OfflineHandler />
-        </Providers>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Providers>
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-1 container mx-auto p-4 sm:px-6 lg:px-8 max-w-7xl">
+                <div className="py-4 sm:py-6 lg:py-8">
+                  {children}
+                </div>
+              </main>
+              <footer className="border-t py-4 px-4 sm:px-6 lg:px-8">
+                <div className="container mx-auto text-center text-sm text-muted-foreground">
+                  © {new Date().getFullYear()} Système de Pointage
+                </div>
+              </footer>
+            </div>
+            <Toaster />
+            <OfflineHandler />
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );
