@@ -1,5 +1,6 @@
 'use client';
 
+import { OfflineFallback } from '@/components/offline-fallback';
 import { ClockModule } from '@/apps/clock';
 import { TimeClockModule } from '@/apps/time-clock';
 import { DashboardModule } from '@/apps/dashboard';
@@ -20,6 +21,8 @@ export default function Home() {
           <HistoryModule />
         </section>
       </div>
+
+      <OfflineFallback />
     </main>
   );
 }

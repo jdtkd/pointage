@@ -209,21 +209,14 @@ export class TimeEntryService {
     const endOfDay = new Date(selectedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Filtrer, trier et dédupliquer les entrées
-    const entries = timeEntries
-      .filter(
-        entry => 
-          entry.userId === userId &&
-          new Date(entry.clockIn) >= startOfDay &&
-          new Date(entry.clockIn) <= endOfDay
-      )
-      .sort((a, b) => new Date(b.clockIn).getTime() - new Date(a.clockIn).getTime());
+    // Recharger les données à chaque appel pour éviter les problèmes de stale data
+    timeEntries = loadTimeEntries();
 
-    // Dédupliquer par ID
-    const uniqueEntries = Array.from(
-      new Map(entries.map(entry => [entry.id, entry])).values()
+    return timeEntries.filter(
+      entry => 
+        entry.userId === userId &&
+        new Date(entry.clockIn) >= startOfDay &&
+        new Date(entry.clockIn) <= endOfDay
     );
-
-    return uniqueEntries;
   }
 } 
