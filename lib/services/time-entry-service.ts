@@ -1,28 +1,56 @@
 import { WORK_RULES } from '@/constants/work-rules';
 import { TimeEntry } from '@/types/time-entry';
 
-// Simuler une base de données en mémoire
-let timeEntries: TimeEntry[] = [];
+// Clé pour le stockage local
+const STORAGE_KEY = 'time_entries';
+
+// Charger les données depuis le localStorage
+function loadTimeEntries(): TimeEntry[] {
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Erreur lors du chargement des pointages:', error);
+    return [];
+  }
+}
+
+// Sauvegarder les données dans le localStorage
+function saveTimeEntries(entries: TimeEntry[]): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde des pointages:', error);
+  }
+}
+
+// Initialiser les données depuis le stockage local
+let timeEntries: TimeEntry[] = loadTimeEntries();
 
 export class TimeEntryService {
-  // Vérifier si l'utilisateur a déjà pointé aujourd'hui
-  private static async hasClockInToday(userId: string): Promise<boolean> {
+  // Vérifier si l'utilisateur a un pointage actif aujourd'hui
+  private static async hasActiveClockInToday(userId: string): Promise<boolean> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     return timeEntries.some(
       entry => 
         entry.userId === userId && 
-        new Date(entry.clockIn) >= today
+        new Date(entry.clockIn) >= today &&
+        !entry.clockOut // Vérifier seulement les pointages sans départ
     );
   }
 
   // Pointer l'arrivée
   static async clockIn(userId: string): Promise<TimeEntry> {
-    // Vérifier si l'utilisateur a déjà pointé aujourd'hui
-    const hasClockInToday = await this.hasClockInToday(userId);
-    if (hasClockInToday) {
-      throw new Error('Vous avez déjà pointé aujourd\'hui');
+    // Vérifier si l'utilisateur a un pointage actif aujourd'hui
+    const hasActiveClockIn = await this.hasActiveClockInToday(userId);
+    if (hasActiveClockIn) {
+      throw new Error('Vous avez déjà un pointage en cours');
     }
 
     const now = new Date();
@@ -42,6 +70,7 @@ export class TimeEntryService {
     };
 
     timeEntries.push(entry);
+    saveTimeEntries(timeEntries); // Sauvegarder après modification
     return entry;
   }
 
@@ -60,7 +89,43 @@ export class TimeEntryService {
     entry.clockOut = now.toISOString();
     entry.updatedAt = now.toISOString();
 
+    saveTimeEntries(timeEntries); // Sauvegarder après modification
     return entry;
+  }
+
+  // Supprimer un pointage
+  static async deleteTimeEntry(entryId: string): Promise<void> {
+    timeEntries = timeEntries.filter(entry => entry.id !== entryId);
+    saveTimeEntries(timeEntries);
+  }
+
+  // Nettoyer les données plus anciennes que X jours
+  static async cleanOldEntries(daysToKeep: number = 30): Promise<void> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+    timeEntries = timeEntries.filter(
+      entry => new Date(entry.clockIn) >= cutoffDate
+    );
+    saveTimeEntries(timeEntries);
+  }
+
+  // Exporter les données
+  static async exportData(): Promise<string> {
+    return JSON.stringify(timeEntries, null, 2);
+  }
+
+  // Importer des données
+  static async importData(data: string): Promise<void> {
+    try {
+      const entries = JSON.parse(data);
+      if (Array.isArray(entries)) {
+        timeEntries = entries;
+        saveTimeEntries(timeEntries);
+      }
+    } catch (error) {
+      throw new Error('Format de données invalide');
+    }
   }
 
   // Obtenir les statistiques

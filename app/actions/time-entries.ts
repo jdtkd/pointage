@@ -25,4 +25,23 @@ export async function getTimeStats(userId: string) {
 
 export async function getTimeEntriesForDate(userId: string, date?: Date) {
   return TimeEntryService.getTimeEntries(userId, date);
+}
+
+export async function deleteTimeEntry(entryId: string) {
+  await TimeEntryService.deleteTimeEntry(entryId);
+  revalidatePath('/');
+}
+
+export async function cleanOldEntries(days: number) {
+  await TimeEntryService.cleanOldEntries(days);
+  revalidatePath('/');
+}
+
+export async function exportTimeEntries() {
+  return TimeEntryService.exportData();
+}
+
+export async function importTimeEntries(data: string) {
+  await TimeEntryService.importData(data);
+  revalidatePath('/');
 } 
