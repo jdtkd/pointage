@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Modèle pour les utilisateurs
+model User {
+  id          String      @id @default(cuid())
+  email       String      @unique
+  name        String?
+  role        UserRole    @default(EMPLOYEE)
+  department  String?
+  timeEntries TimeEntry[]
+  breaks      Break[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("users")
+}
+
+// Modèle pour les pointages
+model TimeEntry {
+  id        String      @id @default(cuid())
+  userId    String
+  clockIn   DateTime    @default(now())
+  clockOut  DateTime?
+  status    EntryStatus @default(ON_TIME)
+  notes     String?
+  breaks    Break[]
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([userId])
+  @@map("time_entries")
+}
+
+// Modèle pour les pauses
+model Break {
+  id          String    @id @default(cuid())
+  timeEntryId String
+  userId      String
+  startTime   DateTime  @default(now())
+  endTime     DateTime?
+  type        BreakType @default(LUNCH)
+  timeEntry   TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([timeEntryId])
+  @@index([userId])
+  @@map("breaks")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum EntryStatus {
+  ON_TIME
+  LATE
+  ABSENT
+}
+
+enum BreakType {
+  LUNCH
+  COFFEE
+  OTHER
+} 
